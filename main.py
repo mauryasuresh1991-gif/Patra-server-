@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import google.generativeai as genai
+import urllib.request
+import json
+import os
 
 app = FastAPI()
 
@@ -13,9 +15,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# सीधी कोड के अंदर एपीआई की सेट कर दी गई है (अब Render पर कुछ भी सेट करने की जरूरत नहीं)
 API_KEY = "AQ.Ab8RN6INB6Fc7lArhiSAMSRK3aNPml1gkPaBz_SecwPO_3paxQ"
-genai.configure(api_key=API_KEY)
 
 class LetterRequest(BaseModel):
     prompt: str
@@ -32,15 +32,28 @@ def generate_letter(req: LetterRequest):
             "and 'भवदीय,' with signature space. Use pure formal bureaucratic Hindi vocabulary."
         )
         
-        full_prompt = f"{system_instruction}\n\nUser Request/Notes: {req.prompt}"
+        full_text = f"{system_instruction}\n\nUser Request/Notes: {req.prompt}"
         
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        response = model.generate_content(full_prompt)
+        # डायरेक्ट गूगल जेमिनी रेस्ट एपीआई का उपयोग (बिना किसी लाइब्रेरी एरर के)
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
         
-        return {"result": response.text}
+        payload = {
+            "contents": [{
+                "parts": [{"text": full_text}]
+            }]
+        }
+        
+        data = json.dumps(payload).encode('utf-8')
+        request = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
+        
+        with urllib.request.urlopen(request) as response:
+            res_data = json.loads(response.read().decode('utf-8'))
+            output_text = res_data['candidates'][0]['content']['parts'][0]['text']
+            return {"result": output_text}
+            
     except Exception as e:
         return {"result": f"एरर: {str(e)}"}
 
 @app.get("/")
 def home():
-    return {"status": "Patra Manager Server is Running perfectly!"}
+    return {"status": "Patra Manager Server is Running!"}
