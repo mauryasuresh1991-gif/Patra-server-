@@ -3,10 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import google.generativeai as genai
 
-# 1. FastAPI ऐप का इंस्टेंस
 app = FastAPI()
 
-# 2. CORS इनेबल करें ताकि फ्रंटएंड से रिक्वेस्ट आसानी से आ सके
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -15,7 +13,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 3. जेमिनी API की को सीधे यहाँ सेट कर दिया गया है
+# सीधी कोड के अंदर एपीआई की सेट कर दी गई है (अब Render पर कुछ भी सेट करने की जरूरत नहीं)
 API_KEY = "AQ.Ab8RN6INB6Fc7lArhiSAMSRK3aNPml1gkPaBz_SecwPO_3paxQ"
 genai.configure(api_key=API_KEY)
 
@@ -25,7 +23,6 @@ class LetterRequest(BaseModel):
 @app.post("/generate-letter")
 def generate_letter(req: LetterRequest):
     try:
-        # सख्त और पेशेवर सिस्टम निर्देश ताकि एआई केवल एक उच्च-स्तरीय शासकीय पत्र ही लिखे
         system_instruction = (
             "You are an expert Government correspondence writer in India. "
             "The user will provide raw notes or instructions. "
@@ -37,7 +34,6 @@ def generate_letter(req: LetterRequest):
         
         full_prompt = f"{system_instruction}\n\nUser Request/Notes: {req.prompt}"
         
-        # सबसे स्थिर और मानक जेमिनी मॉडल
         model = genai.GenerativeModel('gemini-1.5-flash')
         response = model.generate_content(full_prompt)
         
